@@ -6,6 +6,8 @@ const App = () => {
   const [socket, setSocket] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [taskName, setTaskName] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editedName, setEditedName] = useState("");
 
   useEffect(() => {
     const newSocket = io("ws://localhost:8000", {
@@ -14,14 +16,38 @@ const App = () => {
 
     setSocket(newSocket);
 
+    newSocket.on("updateData", (tasks) => setTasks(tasks));
+    newSocket.on("addTask", (task) => addTask(task));
+    newSocket.on("removeTask", (id) => removeTask(id, false));
+    newSocket.on("editTask", (updatedTask) => {
+      setTasks((tasks) =>
+        tasks.map((task) =>
+          task.id === updatedTask.id
+            ? { ...task, name: updatedTask.name }
+            : task
+        )
+      );
+    });
+
     return () => {
       newSocket.disconnect();
     };
   }, []);
 
-  const removeTask = (id) => {
+  const addTask = (task) => {
+    setTasks((tasks) => [...tasks, task]);
+  };
+
+  const removeTask = (id, emit = true) => {
     setTasks((tasks) => tasks.filter((task) => task.id !== id));
-    if (socket) socket.emit("removeTask", id);
+    if (emit && socket) socket.emit("removeTask", id);
+  };
+
+  const editTask = (id, name, emit = true) => {
+    setTasks((tasks) =>
+      tasks.map((task) => (task.id === id ? { ...task, name } : task))
+    );
+    if (emit && socket) socket.emit("editTask", { id, name });
   };
 
   const handleFormSubmit = (e) => {
@@ -34,10 +60,10 @@ const App = () => {
       name: taskName,
     };
 
-    setTasks((tasks) => [...tasks, newTask]);
+    addTask(newTask);
     if (socket) socket.emit("addTask", newTask);
 
-    setTaskName(""); // wyczyść input
+    setTaskName("");
   };
 
   return (
@@ -52,13 +78,49 @@ const App = () => {
         <ul className="tasks-section__list" id="tasks-list">
           {tasks.map((task) => (
             <li className="task" key={task.id}>
-              {task.name}
-              <button
-                className="btn btn--red"
-                onClick={() => removeTask(task.id)}
-              >
-                Remove
-              </button>
+              {editingId === task.id ? (
+                <>
+                  <input
+                    className="text-input"
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        editTask(task.id, editedName);
+                        setEditingId(null);
+                      }
+                    }}
+                  />
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      editTask(task.id, editedName);
+                      setEditingId(null);
+                    }}
+                  >
+                    Save
+                  </button>
+                </>
+              ) : (
+                <>
+                  {task.name}
+                  <button
+                    className="btn btn--red"
+                    onClick={() => removeTask(task.id)}
+                  >
+                    Remove
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setEditingId(task.id);
+                      setEditedName(task.name);
+                    }}
+                  >
+                    Edit
+                  </button>
+                </>
+              )}
             </li>
           ))}
         </ul>
