@@ -38,4 +38,12 @@ io.on("connection", (socket) => {
       socket.broadcast.emit("removeTask", taskId);
     }
   });
+
+  socket.on("editTask", (updatedTask) => {
+    const task = tasks.find((task) => task.id === updatedTask.id);
+    if (task) {
+      task.name = updatedTask.name;
+      socket.broadcast.emit("editTask", updatedTask);
+    }
+  });
 });
