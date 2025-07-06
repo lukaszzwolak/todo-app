@@ -1,9 +1,12 @@
 const express = require("express");
 const path = require("path");
 const socket = require("socket.io");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 8000;
+
+app.use(cors());
 
 app.use(express.static(path.join(__dirname, "/client/build")));
 
