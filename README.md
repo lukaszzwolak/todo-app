@@ -19,17 +19,10 @@ A simple real-time collaborative task list (ToDo app) built with React and WebSo
 ```bash
 yarn start
 or
-
-bash
-Kopiuj
-Edytuj
 node server.js
 The backend runs on port 8000 by default.
 
 Frontend (client)
-bash
-Kopiuj
-Edytuj
 cd client
 yarn install
 yarn start
